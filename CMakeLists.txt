@@ -12,6 +12,7 @@ add_executable(main
 target_sources(main PRIVATE
     include/setup.h
     include/constants.h
+    include/debug_callback.h
 )
 
 target_include_directories(main PRIVATE include)

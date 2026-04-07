@@ -11,6 +11,7 @@
 class Render {
     VkInstance instance;
     GLFWwindow *window;
+    VkDebugUtilsMessengerEXT debugMessenger;
 
 public:
     void run();
@@ -22,6 +23,8 @@ private:
     void initWindow();
     void setAppInfo(VkApplicationInfo &appInfo);
     void setCreateInfo(VkInstanceCreateInfo &createInfo, VkApplicationInfo *appInfo);
+    VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
+    void setupDebugMessenger();
     std::vector<const char*> getRequiredExtensions();
     void handleExtensions(VkInstanceCreateInfo &createInfo);
     void handleRequiredExtensions(VkInstanceCreateInfo &createInfo, uint32_t glfwExtensionCount, std::vector<const char*> requiredExtensions);
@@ -29,6 +32,18 @@ private:
     bool checkValidationLayerSupport();
     void createInstance();
     void mainLoop();
+
+    static void DestroyDebugUtilsMessengerEXT(
+        VkInstance instance,
+        VkDebugUtilsMessengerEXT debugMessenger,
+        const VkAllocationCallbacks* pAllocator
+    ) {
+        PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        if (func != nullptr) {
+            func(instance, debugMessenger, pAllocator);
+        }
+    }
+
     void cleanup();
 };
 
