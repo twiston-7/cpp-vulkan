@@ -4,9 +4,11 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
 #include <string>
 #include <iostream>
 #include <map>
+#include <optional>
 
 #ifndef NDEBUG
 const bool enableValidationLayers = true;
@@ -136,6 +138,28 @@ bool Render::checkValidationLayerSupport() {
     return true;
 }
 
+Render::QueueFamilyIndices Render::findQueueFamilies(VkPhysicalDevice device) {
+    Render::QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+    
+    for (uint32_t i = 0; i < queueFamilyCount; i++) {
+        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
+        }
+
+        if (indices.isComplete()) {
+            break;
+        }
+    }
+
+    return indices;
+}
+
 void Render::createInstance() {
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -181,7 +205,17 @@ void Render::createInstance() {
     showAvailableExtensions();
 }
 
-uint32_t rateDeviceSuitability(VkPhysicalDevice device) {
+bool Render::fitsMinimumRequirements(VkPhysicalDevice device) {
+    Render::QueueFamilyIndices indices = findQueueFamilies(device);
+
+    return indices.isComplete();
+}
+
+uint32_t Render::rateDeviceSuitability(VkPhysicalDevice device) {
+    if (!fitsMinimumRequirements(device)) {
+        throw std::runtime_error("no suitable device found!");
+    }
+
     uint32_t score = 0;
 
     VkPhysicalDeviceProperties deviceProperties;
@@ -201,11 +235,6 @@ uint32_t rateDeviceSuitability(VkPhysicalDevice device) {
     }
 
     std::cout << std::endl;
-
-    if (!deviceFeatures.geometryShader) {
-        std::cerr << "Device doesn't support geometryShader!" << std::endl;
-        return 0;
-    }
 
     if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
         score += 1000;
