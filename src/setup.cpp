@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <string>
 #include <iostream>
+#include <map>
 
 #ifndef NDEBUG
 const bool enableValidationLayers = true;
@@ -166,13 +167,85 @@ void Render::createInstance() {
     }
 
     if (enableValidationLayers) {
-        if (CreateDebugUtilsMessengerEXT(instance, &debugCreateInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+        if (CreateDebugUtilsMessengerEXT(
+            instance,
+            &debugCreateInfo, 
+            nullptr, 
+            &debugMessenger
+        ) != VK_SUCCESS) {
             throw std::runtime_error("failed to set up debug messenger!");
         }
     }
     
 
     showAvailableExtensions();
+}
+
+uint32_t rateDeviceSuitability(VkPhysicalDevice device) {
+    uint32_t score = 0;
+
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+    std::cout << "Device found: " << deviceProperties.deviceName << "\n";
+    std::cout << "With type: ";
+    switch (deviceProperties.deviceType) {
+        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: std::cout << "Integrated GPU"; break;
+        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: std::cout << "Discrete GPU"; break;
+        case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: std::cout << "Virtual GPU"; break;
+        case VK_PHYSICAL_DEVICE_TYPE_CPU: std::cout << "CPU"; break;
+        default: std::cout << "Other"; break;
+    }
+
+    std::cout << std::endl;
+
+    if (!deviceFeatures.geometryShader) {
+        std::cerr << "Device doesn't support geometryShader!" << std::endl;
+        return 0;
+    }
+
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+        score += 1000;
+    }
+
+    score += deviceProperties.limits.maxImageDimension2D;
+
+    return score;
+}
+
+void Render::pickPhysicalDevice() {
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+    if (deviceCount == 0) {
+        throw std::runtime_error("Failed to find GPU with vulkan support!");
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+    std::multimap<int, VkPhysicalDevice> candidates;
+
+    for (const auto &device : devices) {
+        int score = rateDeviceSuitability(device);
+        candidates.insert(std::make_pair(score, device));
+    }
+
+    int highestScore = candidates.rbegin() -> first;
+
+    auto range = candidates.equal_range(highestScore);
+
+    if (range.first != range.second) {
+        if (highestScore > 0) {
+            physicalDevice = range.first->second;
+        } else {
+            std::cerr << "No suitable GPU found. Continuing regardless..." << std::endl;
+            physicalDevice = candidates.rbegin() -> second;
+        }
+    }
 }
 
 void Render::mainLoop() {
@@ -209,6 +282,7 @@ void Render::cleanup() {
 void Render::run() {
     initWindow();
     createInstance();
+    pickPhysicalDevice();
     mainLoop();
     cleanup();
 }

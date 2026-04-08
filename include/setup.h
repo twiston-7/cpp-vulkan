@@ -12,7 +12,7 @@ class Render {
     VkInstance instance;
     GLFWwindow *window;
     VkDebugUtilsMessengerEXT debugMessenger;
-    VkPhysicalDevice psysicalDevice = VK_NULL_HANDLE;
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
 public:
     void run();
@@ -32,6 +32,7 @@ private:
     void showAvailableExtensions();
     bool checkValidationLayerSupport();
     void createInstance();
+    void pickPhysicalDevice();
     void mainLoop();
     void handleValidationLayers(VkInstanceCreateInfo &createInfo, VkDebugUtilsMessengerCreateInfoEXT &debugCreateInfo);
 
