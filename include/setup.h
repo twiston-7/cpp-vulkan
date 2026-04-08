@@ -12,6 +12,7 @@ class Render {
     VkInstance instance;
     GLFWwindow *window;
     VkDebugUtilsMessengerEXT debugMessenger;
+    VkPhysicalDevice psysicalDevice = VK_NULL_HANDLE;
 
 public:
     void run();
@@ -20,25 +21,26 @@ private:
     const uint32_t WIDTH = 800;
     const uint32_t HEIGHT = 600;
     const uint32_t VERSION = VK_MAKE_VERSION(1, 0, 0);
+
     void initWindow();
     void setAppInfo(VkApplicationInfo &appInfo);
-    void setCreateInfo(VkInstanceCreateInfo &createInfo, VkApplicationInfo *appInfo);
+    void setCreateInfo(VkInstanceCreateInfo &createInfo, VkApplicationInfo &appInfo);
     VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
-    void setupDebugMessenger();
+    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
     std::vector<const char*> getRequiredExtensions();
-    void handleExtensions(VkInstanceCreateInfo &createInfo);
-    void handleRequiredExtensions(VkInstanceCreateInfo &createInfo, uint32_t glfwExtensionCount, std::vector<const char*> requiredExtensions);
+    void handleExtensions(VkInstanceCreateInfo &createInfo, uint32_t glfwExtensionCount, const char** glfwExtensions, std::vector<const char*> &requiredExtensions);
     void showAvailableExtensions();
     bool checkValidationLayerSupport();
     void createInstance();
     void mainLoop();
+    void handleValidationLayers(VkInstanceCreateInfo &createInfo, VkDebugUtilsMessengerCreateInfoEXT &debugCreateInfo);
 
-    static void DestroyDebugUtilsMessengerEXT(
+    void DestroyDebugUtilsMessengerEXT(
         VkInstance instance,
         VkDebugUtilsMessengerEXT debugMessenger,
         const VkAllocationCallbacks* pAllocator
     ) {
-        PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
         if (func != nullptr) {
             func(instance, debugMessenger, pAllocator);
         }

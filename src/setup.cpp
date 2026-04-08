@@ -33,7 +33,7 @@ void Render::setAppInfo(VkApplicationInfo &appInfo) {
     appInfo.apiVersion = VK_API_VERSION_1_0;
 }
 
-void Render::setCreateInfo(VkInstanceCreateInfo &createInfo, VkApplicationInfo* appInfo) {
+void Render::setCreateInfo(VkInstanceCreateInfo &createInfo, VkApplicationInfo &appInfo) {
     if (enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -42,7 +42,7 @@ void Render::setCreateInfo(VkInstanceCreateInfo &createInfo, VkApplicationInfo* 
     }
 
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo = appInfo;
+    createInfo.pApplicationInfo = &appInfo;
 }
 
 VkResult Render::CreateDebugUtilsMessengerEXT(
@@ -51,7 +51,7 @@ VkResult Render::CreateDebugUtilsMessengerEXT(
     const VkAllocationCallbacks* pAllocator, 
     VkDebugUtilsMessengerEXT* pDebugMessenger
 ) {
-    PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
     } else {
@@ -59,22 +59,18 @@ VkResult Render::CreateDebugUtilsMessengerEXT(
     }
 }
 
-void Render::setupDebugMessenger() {
-    VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+void Render::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
+    createInfo = {};
 
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = debugCallback;
     createInfo.pUserData = nullptr;
-
-    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
-        throw std::runtime_error("failed to set up debug messenger!");
-    }
 }
 
 std::vector<const char*> Render::getRequiredExtensions() {
-    uint32_t glfwExtensionCount;
+    uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
     
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -88,17 +84,12 @@ std::vector<const char*> Render::getRequiredExtensions() {
     return extensions;
 }
 
-void Render::handleExtensions(VkInstanceCreateInfo &createInfo) {
-    std::vector<const char*> extensions = getRequiredExtensions();
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-    createInfo.ppEnabledExtensionNames = extensions.data();
-}
-
-void Render::handleRequiredExtensions(VkInstanceCreateInfo &createInfo, uint32_t glfwExtensionCount, std::vector<const char*> requiredExtensions) {
+void Render::handleExtensions(VkInstanceCreateInfo &createInfo, uint32_t glfwExtensionCount, const char** glfwExtensions, std::vector<const char*> &requiredExtensions) {
     for (uint32_t i = 0; i < glfwExtensionCount; i++) {
-        requiredExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+        requiredExtensions.emplace_back(glfwExtensions[i]);
     }
 
+    requiredExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
     createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
     createInfo.enabledExtensionCount = (uint32_t) requiredExtensions.size();
@@ -150,23 +141,36 @@ void Render::createInstance() {
     }
 
     VkApplicationInfo appInfo{};
+    setAppInfo(appInfo);
+
     VkInstanceCreateInfo createInfo{};
+    setCreateInfo(createInfo, appInfo);
 
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
 
-    setAppInfo(appInfo);
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    std::vector<const char*> requiredExtensions = getRequiredExtensions();
 
-    setCreateInfo(createInfo, &appInfo);
+    handleExtensions(createInfo, glfwExtensionCount, glfwExtensions, requiredExtensions);
 
-    handleExtensions(createInfo);
-
-    std::vector<const char*> requiredExtensions;
-    handleRequiredExtensions(createInfo, glfwExtensionCount, requiredExtensions);
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+    
+    if (enableValidationLayers) {
+        populateDebugMessengerCreateInfo(debugCreateInfo);
+        handleValidationLayers(createInfo, debugCreateInfo);
+    }
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
         throw std::runtime_error("failed to create instance!");
     }
+
+    if (enableValidationLayers) {
+        if (CreateDebugUtilsMessengerEXT(instance, &debugCreateInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+            throw std::runtime_error("failed to set up debug messenger!");
+        }
+    }
+    
 
     showAvailableExtensions();
 }
@@ -174,6 +178,19 @@ void Render::createInstance() {
 void Render::mainLoop() {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+    }
+}
+
+void Render::handleValidationLayers(VkInstanceCreateInfo &createInfo, VkDebugUtilsMessengerCreateInfoEXT &debugCreateInfo) {    
+    if (enableValidationLayers) {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInfo.ppEnabledLayerNames = validationLayers.data();
+
+        createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
+    } else {
+        createInfo.enabledLayerCount = 0;
+
+        createInfo.pNext = nullptr;
     }
 }
 
