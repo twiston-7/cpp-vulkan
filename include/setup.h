@@ -12,6 +12,8 @@
 class Render {
     VkInstance instance{};
     GLFWwindow *window{};
+    VkDevice device{};
+    VkQueue graphicsQueue{};
     VkDebugUtilsMessengerEXT debugMessenger{};
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
