@@ -10,16 +10,16 @@
 #include <iostream>
 
 class Render {
-    VkInstance instance;
-    GLFWwindow *window;
-    VkDebugUtilsMessengerEXT debugMessenger;
+    VkInstance instance{};
+    GLFWwindow *window{};
+    VkDebugUtilsMessengerEXT debugMessenger{};
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
 public:
     void run();
 private:
-    const uint32_t WIDTH = 800;
-    const uint32_t HEIGHT = 600;
+    const int WIDTH = 800;
+    const int HEIGHT = 600;
     const uint32_t VERSION = VK_MAKE_VERSION(1, 0, 0);
 
     struct QueueFamilyIndices {
@@ -31,22 +31,33 @@ private:
     };
     
     void initWindow();
-    void setAppInfo(VkApplicationInfo &appInfo);
-    void setCreateInfo(VkInstanceCreateInfo &createInfo, VkApplicationInfo &appInfo);
-    VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-    std::vector<const char*> getRequiredExtensions();
-    void handleExtensions(VkInstanceCreateInfo &createInfo, uint32_t glfwExtensionCount, const char** glfwExtensions, std::vector<const char*> &requiredExtensions);
-    void showAvailableExtensions();
-    bool checkValidationLayerSupport();
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-    void createInstance();
-    bool fitsMinimumRequirements(VkPhysicalDevice device);
-    uint32_t rateDeviceSuitability(VkPhysicalDevice device);
-    void pickPhysicalDevice();
-    void mainLoop();
-    void handleValidationLayers(VkInstanceCreateInfo &createInfo, VkDebugUtilsMessengerCreateInfoEXT &debugCreateInfo);
+    void setAppInfo(VkApplicationInfo &appInfo) const;
+    static void setCreateInfo(VkInstanceCreateInfo &createInfo, const VkApplicationInfo &appInfo);
+    
+    static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
+    static std::vector<const char*> getRequiredExtensions();
+    static void handleExtensions(const std::vector<const char*> &requiredExtensions, VkInstanceCreateInfo &createInfo);
+    
+    static bool checkValidationLayerSupport();
+    static void handleValidationLayers(VkInstanceCreateInfo &createInfo, VkDebugUtilsMessengerCreateInfoEXT &debugCreateInfo);
+    
+    void createInstance();
+
+    VkResult CreateDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) const;
+    void setupDebugMessenger();
+
+    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    static bool fitsMinimumRequirements(VkPhysicalDevice device);
+    static uint32_t rateDeviceSuitability(VkPhysicalDevice device);
+    void pickPhysicalDevice();
+    
+    void createLogicalDevice();
+
+    void initVulkan();
+
+    void mainLoop();
+    
     void DestroyDebugUtilsMessengerEXT(
         VkInstance instance,
         VkDebugUtilsMessengerEXT debugMessenger,
