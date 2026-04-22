@@ -4,6 +4,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+#include <optional>
 
 #include <vector>
 #include <string>
@@ -14,8 +15,10 @@ class Render {
     GLFWwindow *window{};
     VkDevice device{};
     VkQueue graphicsQueue{};
+    VkQueue presentQueue{};
     VkDebugUtilsMessengerEXT debugMessenger{};
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    VkSurfaceKHR surface{};
 
 public:
     void run();
@@ -26,9 +29,10 @@ private:
 
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentFamily;
 
         bool isComplete() {
-            return graphicsFamily.has_value();
+            return graphicsFamily.has_value() && presentFamily.has_value();
         }
     };
     
@@ -49,12 +53,13 @@ private:
     VkResult CreateDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) const;
     void setupDebugMessenger();
 
-    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-    static bool fitsMinimumRequirements(VkPhysicalDevice device);
-    static uint32_t rateDeviceSuitability(VkPhysicalDevice device);
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    bool fitsMinimumRequirements(VkPhysicalDevice device);
+    uint32_t rateDeviceSuitability(VkPhysicalDevice device);
     void pickPhysicalDevice();
     
     void createLogicalDevice();
+    void createSurface();
 
     void initVulkan();
 
