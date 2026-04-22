@@ -249,14 +249,14 @@ void Render::pickPhysicalDevice() {
         throw std::runtime_error("Failed to find GPU with vulkan support!");
     }
 
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+    std::vector<VkPhysicalDevice> physical_devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, physical_devices.data());
 
     std::multimap<int, VkPhysicalDevice> candidates;
 
-    for (const auto &device : devices) {
-        uint32_t score = rateDeviceSuitability(device);
-        candidates.insert(std::make_pair(score, device));
+    for (const auto &physical_device : physical_devices) {
+        uint32_t score = rateDeviceSuitability(physical_device);
+        candidates.insert(std::make_pair(score, physical_device));
     }
 
     int highestScore = candidates.rbegin() -> first;
@@ -317,7 +317,7 @@ void Render::initVulkan() {
     createLogicalDevice();
 }
 
-void Render::mainLoop() {
+void Render::mainLoop() const {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
     }

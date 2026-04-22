@@ -58,7 +58,7 @@ private:
 
     void initVulkan();
 
-    void mainLoop();
+    void mainLoop() const;
     
     void DestroyDebugUtilsMessengerEXT(
         VkInstance instance,

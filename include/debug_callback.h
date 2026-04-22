@@ -14,4 +14,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     return VK_FALSE;
 }
 
+VkSurfaceKHR surface;
+
 #endif
