@@ -60,12 +60,12 @@ private:
     
     void createLogicalDevice();
     void createSurface();
-    void createSwapChain();
 
     VkSwapchainKHR swapChain{};
     std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat{};
     VkExtent2D swapChainExtent{};
+    std::vector<VkImageView> swapChainImageViews;
     bool framebufferResized = false;
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
@@ -79,6 +79,8 @@ private:
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+    void createSwapChain();
+    void createImageViews();
 
     void initVulkan();
 
