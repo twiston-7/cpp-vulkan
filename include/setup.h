@@ -60,11 +60,30 @@ private:
     
     void createLogicalDevice();
     void createSurface();
+    void createSwapChain();
+
+    VkSwapchainKHR swapChain{};
+    std::vector<VkImage> swapChainImages;
+    VkFormat swapChainImageFormat{};
+    VkExtent2D swapChainExtent{};
+    bool framebufferResized = false;
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+    struct SwapChainSupportDetails {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
+    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
     void initVulkan();
 
-    void mainLoop() const;
-    
+    void mainLoop();
+
     void DestroyDebugUtilsMessengerEXT(
         VkInstance instance,
         VkDebugUtilsMessengerEXT debugMessenger,
@@ -77,6 +96,7 @@ private:
     }
 
     void cleanup();
+    void recreateSwapChain();
 };
 
 #endif
