@@ -7,8 +7,6 @@
 #include <optional>
 
 #include <vector>
-#include <string>
-#include <iostream>
 
 class Render {
     VkInstance instance{};
@@ -21,7 +19,33 @@ class Render {
     VkSurfaceKHR surface{};
 
 public:
-    void run();
+    // Setup lifecycle (exposed so renderer/main can orchestrate render loop)
+    void initWindow();
+    void initVulkan();
+    void cleanup();
+
+    // Accessors for renderer
+    [[nodiscard]] VkDevice getDevice() const { return device; }
+    [[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
+    [[nodiscard]] VkQueue getGraphicsQueue() const { return graphicsQueue; }
+    [[nodiscard]] VkQueue getPresentQueue() const { return presentQueue; }
+    [[nodiscard]] VkSwapchainKHR getSwapChain() const { return swapChain; }
+    [[nodiscard]] const std::vector<VkImageView>& getSwapChainImageViews() const { return swapChainImageViews; }
+    [[nodiscard]] VkFormat getSwapChainImageFormat() const { return swapChainImageFormat; }
+    [[nodiscard]] VkExtent2D getSwapChainExtent() const { return swapChainExtent; }
+    [[nodiscard]] VkSurfaceKHR getSurface() const { return surface; }
+
+    [[nodiscard]] bool isFramebufferResized() const { return framebufferResized; }
+    void clearFramebufferResized() { framebufferResized = false; }
+    [[nodiscard]] GLFWwindow* getWindow() const { return window; }
+
+    // Swapchain control exposed for renderer
+    void recreateSwapChain();
+
+    // Queue family helpers for renderer
+    uint32_t getGraphicsFamilyIndex();
+    uint32_t getPresentFamilyIndex();
+
 private:
     const int WIDTH = 800;
     const int HEIGHT = 600;
@@ -31,12 +55,11 @@ private:
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
 
-        bool isComplete() {
+        [[nodiscard]] bool isComplete() const {
             return graphicsFamily.has_value() && presentFamily.has_value();
         }
     };
     
-    void initWindow();
     void setAppInfo(VkApplicationInfo &appInfo) const;
     static void setCreateInfo(VkInstanceCreateInfo &createInfo, const VkApplicationInfo &appInfo);
     
@@ -69,7 +92,7 @@ private:
     bool framebufferResized = false;
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+    static bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     struct SwapChainSupportDetails {
         VkSurfaceCapabilitiesKHR capabilities;
         std::vector<VkSurfaceFormatKHR> formats;
@@ -82,23 +105,19 @@ private:
     void createSwapChain();
     void createImageViews();
 
-    void initVulkan();
 
-    void mainLoop();
-
-    void DestroyDebugUtilsMessengerEXT(
+    static void DestroyDebugUtilsMessengerEXT(
         VkInstance instance,
         VkDebugUtilsMessengerEXT debugMessenger,
         const VkAllocationCallbacks* pAllocator
     ) {
-        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        const auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+            vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
         if (func != nullptr) {
             func(instance, debugMessenger, pAllocator);
         }
     }
 
-    void cleanup();
-    void recreateSwapChain();
 };
 
 #endif

@@ -11,7 +11,6 @@
 #include <set>
 #include <algorithm>
 #include <limits>
-#include <cstdint>
 
 #ifndef NDEBUG
 constexpr bool enableValidationLayers = true;
@@ -127,7 +126,7 @@ void Render::handleValidationLayers(VkInstanceCreateInfo &createInfo, VkDebugUti
 }
 
 void Render::createInstance() {
-    if (enableValidationLayers && !checkValidationLayerSupport()) {
+    if (!checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
 
@@ -458,11 +457,12 @@ void Render::createImageViews() {
         }
     }
 }
+
 void Render::createLogicalDevice() {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+    std::set uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
     float priority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -518,16 +518,7 @@ void Render::createSurface() {
     }
 }
 
-void Render::mainLoop() {
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-
-        if (framebufferResized) {
-            framebufferResized = false;
-            recreateSwapChain();
-        }
-    }
-}
+// mainLoop removed: rendering is handled by Renderer now
 
 void Render::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto app = reinterpret_cast<Render*>(glfwGetWindowUserPointer(window));
@@ -552,6 +543,14 @@ void Render::recreateSwapChain() {
     createImageViews();
 }
 
+uint32_t Render::getGraphicsFamilyIndex() {
+    return findQueueFamilies(physicalDevice).graphicsFamily.value();
+}
+
+uint32_t Render::getPresentFamilyIndex() {
+    return findQueueFamilies(physicalDevice).presentFamily.value();
+}
+
 void Render::cleanup() {
     if (enableValidationLayers) {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
@@ -566,6 +565,7 @@ void Render::cleanup() {
         vkDestroySwapchainKHR(device, swapChain, nullptr);
     }
 
+
     vkDestroyDevice(device, nullptr);
 
     vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -575,11 +575,4 @@ void Render::cleanup() {
     glfwDestroyWindow(window);
 
     glfwTerminate();
-}
-
-void Render::run() {
-    initWindow();
-    initVulkan();
-    mainLoop();
-    cleanup();
 }
